@@ -1,2 +1,3 @@
 # Diego_code
-Diego's code / useful functions for work in the ProektLab
+This repository contains Diego's code and useful functions for work in the Proekt Lab @ University of Pennsylvania School of Medicine. 
+
