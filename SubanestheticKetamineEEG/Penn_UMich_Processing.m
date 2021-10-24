@@ -19,7 +19,7 @@
 % 9. Automated Artifact Labeling & Rejection 
 % 10. Perform Average Re-Referencing 
 %
-% Required Packages: EEGLAB, ADJUST Pluggin
+% Required Packages & Functions: EEGLAB, Proekt Lab Spectral Analysis Directory 
 addpath 'C:\Users\diego\Documents\MATLAB\eeglab2020_0';
 eeglab % initialize eeglab
 close all; % close eeglab window
