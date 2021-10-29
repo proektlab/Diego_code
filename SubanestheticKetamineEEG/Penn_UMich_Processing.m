@@ -16,7 +16,7 @@
 % 6. Remove and Interpolate Bad Channels
 % 7. Perform ICA  
 % 8. Remove line noise via CleanLine 
-% 9. Automated Artifact Labeling & Rejection 
+% 9. Automated Artifact Labeling & Rejection (Reguires this function: https://github.com/proektlab/Diego_code/blob/main/UsefulMiscFunctions/clean_comp.m)
 % 10. Perform Average Re-Referencing 
 %
 % Required Packages & Functions: EEGLAB, Proekt Lab Spectral Analysis Directory 
