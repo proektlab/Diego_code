@@ -6,7 +6,15 @@
 % University of Pennsylvania School of Medicine
 %
 % This script derives the following measures:
-%
+% 1. Imaginary Coherence
+% 2. Phase Slope Index
+% 3. Node Degree (Based on Imaginary Coherence)
+% 4. Betweenness Centrality (Based on Imaginary Coherence)
+% 5. Clustering Coefficient (Based on Imaginary Coherence)
+% 6. Coefficient of Variation (Based on Imaginary Coherence)
+% 7. Coefficient of Variation (Based on Imaginary Coherence Degree)
+% 8. Coefficient of Variation (Based on Imaginary Coherence Betweenness)
+% 9. Coefficient of Variation (Based on Imaginary Coherence Clustering Coefficient)
 %
 addpath 'C:\Users\diego\Documents\MATLAB\eeglab2020_0';
 eeglab % initialize eeglab
