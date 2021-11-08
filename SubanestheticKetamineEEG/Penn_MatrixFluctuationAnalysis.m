@@ -5,8 +5,8 @@
 % Proekt Lab
 % University of Pennsylvania School of Medicine
 %
-% This script contrains an analysis of the variance in change in
-% connectivity under 0.4 micrograms/mL of Ketamine
+% This script contrains an analysis of the variance of change (fluctuation) in
+% connectivity under Ketamine
 % 
 % This is done for a measure of functional connectivity (Imaginary
 % Coherence) and effective connectivity (Phase Slope Index)
