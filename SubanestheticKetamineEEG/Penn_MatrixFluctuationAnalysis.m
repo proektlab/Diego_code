@@ -5,8 +5,8 @@
 % Proekt Lab
 % University of Pennsylvania School of Medicine
 %
-% This script contrains an analysis of the variance of change (fluctuation) in
-% connectivity under Ketamine
+% This script contrains an analysis of the variance in change in
+% connectivity under 0.4 micrograms/mL of Ketamine
 % 
 % This is done for a measure of functional connectivity (Imaginary
 % Coherence) and effective connectivity (Phase Slope Index)
@@ -20,10 +20,10 @@ include_michigan = false; % boolean - determine wether to include UMich Dataset 
 % Baseline
 % Generate fluctuations over time segments for every subject at baseline
 if (include_michigan)
-    BaselineFluctuations_icoh=zeros(numel(all_baseline_iCoh_segmented), 11);
+    BaselineFluctuations_icoh=zeros(numel(all_baseline_iCoh_segmented), 55);
     for j=1:numel(all_baseline_iCoh_segmented)
         s1 = all_baseline_iCoh_segmented{j};
-        normvector = zeros(12, 1);
+        normvector = zeros(56, 1);
         normvector(1) = norm(s1(:,:,1) ,'fro');
         for i = 1:size(s1, 3) - 1
             BaselineFluctuations_icoh(j,i) = norm(s1(:,:,i+1) - s1(:,:,i), 'fro');
@@ -32,10 +32,10 @@ if (include_michigan)
         BaselineFluctuations_icoh(j,:)=BaselineFluctuations_icoh(j,:)/mean(normvector);
     end
 else
-    BaselineFluctuations_icoh=zeros(numel(Penn_baseline_iCoh_segmented), 11);
+    BaselineFluctuations_icoh=zeros(numel(Penn_baseline_iCoh_segmented), 55);
     for j=1:numel(Penn_baseline_iCoh_segmented)
         s1 = Penn_baseline_iCoh_segmented{j};
-        normvector = zeros(12, 1);
+        normvector = zeros(56, 1);
         normvector(1) = norm(s1(:,:,1) ,'fro');
         for i = 1:size(s1, 3) - 1
             BaselineFluctuations_icoh(j,i) = norm(s1(:,:,i+1) - s1(:,:,i), 'fro');
@@ -47,10 +47,10 @@ end
 % Low Dose
 if (include_michigan)
     % Generate fluctuations over time segments for every subject under low ketamine
-    lowKFluctuations_icoh = zeros(numel(all_suban_iCoh_segmented), 11);
+    lowKFluctuations_icoh = zeros(numel(all_suban_iCoh_segmented), 55);
     for j = 1:numel(all_suban_iCoh_segmented)
         s1 = all_suban_iCoh_segmented{j};
-        normvector = zeros(12, 1);
+        normvector = zeros(56, 1);
         normvector(1) = norm(s1(:,:,1) ,'fro');
         for i = 1:size(s1, 3) - 1
             lowKFluctuations_icoh(j,i) = norm(s1(:,:,i+1)-s1(:,:,i), 'fro');
@@ -60,10 +60,10 @@ if (include_michigan)
     end
 else
     % Generate fluctuations over time segments for every subject under low ketamine
-    lowKFluctuations_icoh = zeros(numel(Penn_low_dose_iCoh_segmented), 11);
+    lowKFluctuations_icoh = zeros(numel(Penn_low_dose_iCoh_segmented), 55);
     for j = 1:numel(Penn_low_dose_iCoh_segmented)
         s1 = Penn_low_dose_iCoh_segmented{j};
-        normvector = zeros(12, 1);
+        normvector = zeros(56, 1);
         normvector(1) = norm(s1(:,:,1) ,'fro');
         for i = 1:size(s1, 3) - 1
             lowKFluctuations_icoh(j,i) = norm(s1(:,:,i+1)-s1(:,:,i), 'fro');
@@ -74,10 +74,10 @@ else
 end
 % High Dose
 % Generate fluctuations over time segments for every subject under ketamine
-highKFluctuations_icoh = zeros(numel(Penn_high_dose_iCoh_segmented), 11);
+highKFluctuations_icoh = zeros(numel(Penn_high_dose_iCoh_segmented), 55);
 for j = 1:numel(Penn_high_dose_iCoh_segmented)
     s1 = Penn_high_dose_iCoh_segmented{j};
-    normvector = zeros(12, 1);
+    normvector = zeros(56, 1);
     normvector(1) = norm(s1(:,:,1) ,'fro');
     for i = 1:size(s1, 3) - 1
         highKFluctuations_icoh(j,i) = norm(s1(:,:,i+1)-s1(:,:,i), 'fro');
@@ -91,10 +91,10 @@ end
 % Baseline
 if (include_michigan)
     % Generate fluctuations over time segments for every subject at baseline
-    BaselineFluctuations_psi=zeros(numel(all_baseline_alpha_psi), 11);
+    BaselineFluctuations_psi=zeros(numel(all_baseline_alpha_psi), 55);
     for j=1:numel(all_baseline_alpha_psi)
         s1 = all_baseline_alpha_psi{j};
-        normvector = zeros(12, 1);
+        normvector = zeros(56, 1);
         normvector(1) = norm(s1(:,:,1) ,'fro');
         for i = 1:size(s1, 3) - 1
             BaselineFluctuations_psi(j,i) = norm(s1(:,:,i+1) - s1(:,:,i), 'fro');
@@ -104,10 +104,10 @@ if (include_michigan)
     end
 else
     % Generate fluctuations over time segments for every subject at baseline
-    BaselineFluctuations_psi=zeros(numel(Penn_baseline_alpha_psi), 11);
+    BaselineFluctuations_psi=zeros(numel(Penn_baseline_alpha_psi), 55);
     for j=1:numel(Penn_baseline_alpha_psi)
         s1 = Penn_baseline_alpha_psi{j};
-        normvector = zeros(12, 1);
+        normvector = zeros(56, 1);
         normvector(1) = norm(s1(:,:,1) ,'fro');
         for i = 1:size(s1, 3) - 1
             BaselineFluctuations_psi(j,i) = norm(s1(:,:,i+1) - s1(:,:,i), 'fro');
@@ -118,10 +118,10 @@ else
 end
 % Low Dose
 if (include_michigan)
-    lowKFluctuations_psi = zeros(numel(all_suban_alpha_psi), 11);
+    lowKFluctuations_psi = zeros(numel(all_suban_alpha_psi), 55);
     for j = 1:numel(all_suban_alpha_psi)
         s1 = all_suban_alpha_psi{j};
-        normvector = zeros(12, 1);
+        normvector = zeros(56, 1);
         normvector(1) = norm(s1(:,:,1) ,'fro');
         for i = 1:size(s1, 3) - 1
             lowKFluctuations_psi(j,i) = norm(s1(:,:,i+1)-s1(:,:,i), 'fro');
@@ -131,10 +131,10 @@ if (include_michigan)
     end
 else
 % Generate fluctuations over time segments for every subject under low ketamine
-    lowKFluctuations_psi = zeros(numel(Penn_low_dose_alpha_psi), 11);
+    lowKFluctuations_psi = zeros(numel(Penn_low_dose_alpha_psi), 55);
     for j = 1:numel(Penn_low_dose_alpha_psi)
         s1 = Penn_low_dose_alpha_psi{j};
-        normvector = zeros(12, 1);
+        normvector = zeros(56, 1);
         normvector(1) = norm(s1(:,:,1) ,'fro');
         for i = 1:size(s1, 3) - 1
             lowKFluctuations_psi(j,i) = norm(s1(:,:,i+1)-s1(:,:,i), 'fro');
@@ -145,10 +145,10 @@ else
 end
 % High Dose
 % Generate fluctuations over time segments for every subject under ketamine
-highKFluctuations_psi = zeros(numel(Penn_high_dose_alpha_psi), 11);
+highKFluctuations_psi = zeros(numel(Penn_high_dose_alpha_psi), 55);
 for j = 1:numel(Penn_high_dose_alpha_psi)
     s1 = Penn_high_dose_alpha_psi{j};
-    normvector = zeros(12, 1);
+    normvector = zeros(56, 1);
     normvector(1) = norm(s1(:,:,1) ,'fro');
     for i = 1:size(s1, 3) - 1
         highKFluctuations_psi(j,i) = norm(s1(:,:,i+1)-s1(:,:,i), 'fro');
@@ -288,4 +288,18 @@ save('C:\Users\diego\Desktop\all_matrices.mat', 'Penn_baseline_alpha_psi', 'Penn
 writematrix(highKFluctuations_psi, 'C:\Users\diego\Desktop\high_psi_fluctuations.csv')
 writematrix(lowKFluctuations_psi, 'C:\Users\diego\Desktop\low_psi_fluctuations.csv')
 writematrix(BaselineFluctuations_psi, 'C:\Users\diego\Desktop\baseline_psi_fluctuations.csv')
+
+
+%% Pitman-Morgan Test for eqauality of variances
+
+[h1,p1,ratio1] = PitmanMorganTest(BaselineFluctuations_psi(:), lowKFluctuations_psi(:));
+[h2,p2,ratio2] = PitmanMorganTest(BaselineFluctuations_psi(:), highKFluctuations_psi(:));
+[h3,p3,ratio3] = PitmanMorganTest(lowKFluctuations_psi(:), highKFluctuations_psi(:));
+
+[h1c,p1c,ratio1c] = PitmanMorganTest(BaselineFluctuations_icoh(:), lowKFluctuations_icoh(:));
+[h2c,p2c,ratio2c] = PitmanMorganTest(BaselineFluctuations_icoh(:), highKFluctuations_icoh(:));
+[h3c,p3c,ratio3c] = PitmanMorganTest(lowKFluctuations_icoh(:), highKFluctuations_icoh(:));
+
+T_PSI = table([h1; h2; h3], [p1; p2; p3], [ratio1; ratio2; ratio3], 'VariableNames',{'Is Stat. Sig.?','p-val', 'Var. Ratio'}, 'RowNames',{'Baseline-LowDose','Baseline-HighDose','LowDose-HighDose'});
+T_iCOH = table([h1c; h2c; h3c], [p1c; p2c; p3c], [ratio1c; ratio2c; ratio3c], 'VariableNames',{'Is Stat. Sig.?','p-val', 'Var. Ratio'}, 'RowNames',{'Baseline-LowDose','Baseline-HighDose','LowDose-HighDose'});
 
