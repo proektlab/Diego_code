@@ -303,3 +303,5 @@ writematrix(BaselineFluctuations_psi, 'C:\Users\diego\Desktop\baseline_psi_fluct
 T_PSI = table([h1; h2; h3], [p1; p2; p3], [ratio1; ratio2; ratio3], 'VariableNames',{'Is Stat. Sig.?','p-val', 'Var. Ratio'}, 'RowNames',{'Baseline-LowDose','Baseline-HighDose','LowDose-HighDose'});
 T_iCOH = table([h1c; h2c; h3c], [p1c; p2c; p3c], [ratio1c; ratio2c; ratio3c], 'VariableNames',{'Is Stat. Sig.?','p-val', 'Var. Ratio'}, 'RowNames',{'Baseline-LowDose','Baseline-HighDose','LowDose-HighDose'});
 
+[h, crit_p, adj_ci_cvrg, adj_p] = fdr_bh([p1, p2, p3]);
+[hx, crit_px, adj_ci_cvrgx, adj_px] = fdr_bh([p1c, p2c, p3c]);
