@@ -68,8 +68,4 @@ output(1).markovs = markovs;
 output.entropy_vector = entropy_vector;
 output.trace_vector = trace_vector;
 
-% PLOT
-figure; plot(1:(size(data, 1)/tau), entropy_vector'); xlabel('Time Segments'); ylabel('Entropy Rate'); title('Entropy Rate Over Time');
-
-
 end
