@@ -1,0 +1,81 @@
+---
+title: "Classifier Comparison"
+output: html_notebook
+---
+
+# Setup
+```{r}
+library(pacman)
+p_load(dplyr, tidyverse, glmnet, randomForest, tree, ggplot2, skimr, ggRandomForests, xgboost, kableExtra, keras, neuralnet, tensorflow, ggpubr, effectsize, pROC, verification, MASS, pracma, ROCR, e1071)
+```
+
+## Read in Data
+```{r}
+data2 <- read.csv('EEG_CSV/classification_lambda_histograms.csv', header = FALSE)
+data2[,195] <- as.factor(data2[,195]) # Turn the response variable into a factor
+data2[,196] <- as.factor(data2[,196]) # subject id
+colnames(data2)[196] <- c("subject.id")
+
+data <- read.csv('EEG_CSV/PSD_Classifier_Input.csv', header = FALSE)
+data[,101] <- as.factor(data[,101]) # Turn the response variable into a factor
+data[,102] <- as.factor(data[,102]) # subject id
+colnames(data)[101] <- c("dose")
+colnames(data)[102] <- c("subject.id")
+```
+
+# Performance Testing
+```{r}
+nrun <- 100
+
+Stability_Performances <- rep(0,nrun)
+for (i in 1:nrun){
+  rf_classifier_2 <- randomForest(data = data2,        # Pass in the data
+                                x = data2[,151:194],   # Select the predictor variables (0.8-1.2 Crit. Index)
+                                y = data2[,195],       # Select the response variable
+                                ntree = 500,           # Select the range of number of trees to try
+                                mtry = 6)             # Select the number of variables for each tree to use
+  oob.err_2 <- gg_error(rf_classifier_2)
+  #colnames(oob.err_2) <- c('All','0.0μg/ml', '0.4μg/ml', 'ntree')
+  Stability_Performances[i] <- oob.err_2[500, 1]
+}
+
+PSD_Performances <- rep(0,nrun)
+for (i in 1:nrun){
+  rf_classifier_psd <- randomForest(data = data,        # Pass in the data
+                                x = data[,1:100],   # Select the predictor variables (0.8-1.2 Crit. Index)
+                                y = data[,101],       # Select the response variable
+                                ntree = 500,           # Select the range of number of trees to try
+                                mtry = 6)             # Select the number of variables for each tree to use
+  oob.err_psd <- gg_error(rf_classifier_psd)
+  #colnames(oob.err_psd) <- c('All','0.0μg/ml', '0.4μg/ml', 'ntree')
+  PSD_Performances[i] <- oob.err_psd[500, 1]
+}
+
+htest <- wilcox.test(Stability_Performances, PSD_Performances)
+htest$p.value
+mean(Stability_Performances)
+std(Stability_Performances)
+mean(PSD_Performances)
+std(PSD_Performances)
+```
+
+# Plot 
+```{r}
+jpeg(file="C:/Users/diego/Desktop/EEGStabilityGroupFigures/ClassifierCompare.jpeg", width = 300, height = 200, units='mm', res = 300)
+ggplot(data = stack(data.frame(Stability.Classifier = Stability_Performances, PSD.Classifier = PSD_Performances)), aes(x = ind, y = values, fill = ind)) +
+  geom_boxplot() +
+  ylab("Out-Of-Sample Error Rate") +
+  xlab(element_blank()) +
+  theme(legend.position = "none") +
+  ggtitle("100 Re-trainings") + 
+  theme(plot.title = element_text(face="bold", size=15), axis.title = element_text(face="bold", size=15), axis.text = element_text(face="bold", size=15)) + 
+  stat_compare_means(method = "wilcox.test", size = 7) 
+dev.off()
+```
+
+
+
+
+
+
+
