@@ -1,0 +1,292 @@
+%% Human Ketamine EEG Stability Figures
+
+%% Frequency by criticality index log likelihood ratio
+%figure;
+tiledlayout(2,3);
+for s = 1:length(Penn_awake_stability_output)
+    nexttile
+    fs=1000;
+    
+    % extract all the lambdas 
+    humanEEGLambda=vertcat(Penn_awake_stability_output{s}.lambdas(:)); 
+    %humanEEGLambda=awake_lambda_vector;
+    % define bins
+    %rhoBins=0:0.01:1.2;
+    rhoBins=linspace(0.75, 1.05, 100);
+    %freqBins=0:0.5:520;
+    freqBins=logspace(-1, 3, 100);
+    % convert the complex lambda values into rho/theta
+    [humanEEGTheta, humanEEGRho]=cart2pol(real(humanEEGLambda), imag(humanEEGLambda));
+    % convert from angle to frequency 
+    humanEEGFreq=abs(humanEEGTheta./(2*pi*(1/fs)));
+    % Do binning
+    [n_humanEEG,c]=hist3(horzcat(humanEEGRho, humanEEGFreq), 'Edges', {rhoBins, freqBins});
+    % normalize
+    n_humanEEG=n_humanEEG./sum(n_humanEEG(:));
+    n_humanEEG= n_humanEEG+eps;
+    
+    % extract all the lambdas 
+    humanEEGLambda2=vertcat(Penn_highDose_stability_output{s}.lambdas(:)); 
+    %humanEEGLambda2=high_lambda_vector;
+    % define bins
+    %rhoBins2=0:0.01:1.2;
+    rhoBins2=linspace(0.75, 1.05, 100);
+    %freqBins2=0:0.5:520;
+    freqBins2=logspace(-1, 3, 100);
+    % convert the complex lambda values into rho/theta
+    [humanEEGTheta2, humanEEGRho2]=cart2pol(real(humanEEGLambda2), imag(humanEEGLambda2));
+    % convert from angle to frequency 
+    humanEEGFreq2=abs(humanEEGTheta2./(2*pi*(1/fs)));
+    % Do binning
+    [n_humanEEG2,c2]=hist3(horzcat(humanEEGRho2, humanEEGFreq2), 'Edges', {rhoBins2, freqBins2});
+    % normalize
+    n_humanEEG2=n_humanEEG2./sum(n_humanEEG2(:));
+    n_humanEEG2=n_humanEEG2+eps;
+    % Log Likelihood Awake vs High Ketamine
+    pcolor(c{2}, c{1}, imgaussfilt(log10(n_humanEEG./n_humanEEG2), 1)); shading flat; 
+    if (s==3 | s==6)
+        a = colorbar('location','eastoutside');
+        a.Label.String = 'Log Likelihood Ratio';
+    end
+    title(['Subject ', num2str(s)], 'FontSize', 12);
+    if (s==1 | s==4)
+        xlabel('Frequency (Hz)', 'FontSize', 12)
+        ylabel('Criticality Index', 'FontSize', 12);
+    end
+    ylim([0.75 1.05])
+    xlim([0 50])
+    grid on;
+    %set(gca,'color',[0.93 0.93 0.93])
+    ax = gca;
+    ax.GridColor = [1 1 1];
+    ax.GridAlpha = 1;
+    colormap(brewermap([],"RdBu"))
+    %colormap('jet')
+    brighten(.3);
+    caxis([-10 10])
+end
+%sgtitle('0.0µg/mL vs 0.4µg/mL Ketamine Log-Likelihood Ratio');
+
+
+
+%% Subject-Wise Criticality Index Plots
+tiledlayout(2,3);
+for i = 1:length(Penn_awake_stability_output)
+    % Figures
+    twn = 0.5; % time window size (s)
+    lbn = 0.05:0.005:1.02; % eigenvalue bins
+    cdat = Penn_processed_baseline{1}.data';
+    fs = 1000;
+    is = 1:round(twn*fs):size(cdat,1); % window start times (samples)
+    tcenter = is(1:end-1)/fs+twn/2; % s
+    tcenter = [tcenter, tcenter + 60.0042, tcenter + 120.0042];
+    
+    nexttile
+    imagesc(tcenter,lbn, horzcat(Penn_awake_stability_output{i}.lambda_histograms, Penn_lowDose_stability_output{i}.lambda_histograms, Penn_highDose_stability_output{i}.lambda_histograms))
+    set(gca,'YDir','normal');
+    colormap(hot(256));
+    title(['Subject ', num2str(i)])
+    xticks([30, 90, 150]);
+    xticklabels({'0µg/mL', '0.2µg/mL', '0.4µg/mL'})
+    if (i==4 | i==5 | i==6)
+        xlabel('Dose')
+    end
+    if (i==1 | i==4)
+        ylabel('Criticality Index')
+    else
+        yticks([]);
+    end
+    if (i==3 | i==6)
+        a = colorbar('location','eastoutside');
+        a.Label.String = 'Number of Modes';
+    end
+    xline(60.0042, 'w');
+    xline(120.0042, 'w');
+    ylim([0.7 1.01])
+    caxis([0 1.5])
+end
+sgtitle("Criticality Index Histograms")
+
+%% Average Criticality Index Histogram by Dose
+
+% Generate average 
+
+averaged_lambdas = {[]};
+
+for i = 1:length(Penn_awake_stability_output)
+    if (i == 1)
+        averaged_lambdas{1} = Penn_awake_stability_output{i}.lambda_histograms;
+        averaged_lambdas{2} = Penn_lowDose_stability_output{i}.lambda_histograms;
+        averaged_lambdas{3} = Penn_highDose_stability_output{i}.lambda_histograms;
+    else
+        averaged_lambdas{1} = averaged_lambdas{1} + Penn_awake_stability_output{i}.lambda_histograms;
+        averaged_lambdas{2} = averaged_lambdas{2} + Penn_lowDose_stability_output{i}.lambda_histograms;
+        averaged_lambdas{3} = averaged_lambdas{3} + Penn_highDose_stability_output{i}.lambda_histograms;
+    end
+end
+averaged_lambdas{1} = averaged_lambdas{1}/length(Penn_awake_stability_output);
+averaged_lambdas{2} = averaged_lambdas{2}/length(Penn_awake_stability_output);
+averaged_lambdas{3} = averaged_lambdas{3}/length(Penn_awake_stability_output);
+
+% Figures
+twn = 0.5; % time window size (s)
+lbn = 0.05:0.005:1.02; % eigenvalue bins
+cdat = Penn_processed_baseline{1}.data';
+fs = 1000;
+is = 1:round(twn*fs):size(cdat,1); % window start times (samples)
+tcenter = is(1:end-1)/fs+twn/2; % s
+tcenter = [tcenter, tcenter + 60.0042, tcenter + 120.0042];
+
+fig = figure; 
+imagesc(tcenter,lbn, horzcat(averaged_lambdas{1}, averaged_lambdas{2}, averaged_lambdas{3}))
+set(gca,'YDir','normal');
+colormap(hot(256));
+%title('Averaged Histograms by Dose')
+xticks([30, 90, 150]);
+xticklabels({'0µg/mL Ketamine', '0.2µg/mL Ketamine', '0.4µg/mL Ketamine'})
+xlabel('Dose', 'FontSize', 12)
+ylabel('Criticality Index', 'FontSize', 12)
+colorbar
+a = colorbar;
+a.Label.String = 'Number of Modes';
+xline(60.0042, 'w');
+xline(120.0042, 'w');
+ylim([0.7 1.01])
+
+%% Spectral Topological Plots
+counter = 0;
+for i = 1:length(Penn_processed_baseline)
+    counter = counter + 1; 
+    if (i == 3)
+        continue
+    else
+        figure; pop_spectopo(Penn_processed_baseline{i}, 1, [0  59999], 'EEG' , 'percent', 100, 'freq', [6 10 22], 'freqrange',[2 25],'electrodes','off', 'limits', [nan nan -25 25 nan nan]); sgtitle(["No Ketamine Eyes Closed: Subject ", num2str(counter)]); 
+        figure; pop_spectopo(Penn_processed_low_dose{i}, 1, [0  59999], 'EEG' , 'percent', 100, 'freq', [6 10 22], 'freqrange',[2 25],'electrodes','off', 'limits', [nan nan -25 25 nan nan]); sgtitle(["Low Ketamine Eyes Closed: Subject ", num2str(counter)]); 
+        figure; pop_spectopo(Penn_processed_high_dose{i}, 1, [0  59999], 'EEG' , 'percent', 100, 'freq', [6 10 22], 'freqrange',[2 25],'electrodes','off', 'limits', [nan nan -25 25 nan nan]); sgtitle(["High Ketamine Eyes Closed: Subject ", num2str(counter)]); 
+    end
+end
+
+
+%% Do Avg PSD
+awake_psd = zeros(82, 50, 6);
+lowKet_psd = zeros(82, 50, 6);
+highKet_psd = zeros(82, 50, 6);
+counter = 0;
+for i = 1:length(Penn_processed_low_dose)
+    counter = counter +1;
+    if (i == 3)
+        continue
+    else
+        [power, ~] = spectopo(Penn_processed_baseline{i}.data, 0, 1000);
+        close all;
+        awake_psd(:,:, counter) = power(:,2:51);
+    
+        [power, ~] = spectopo(Penn_processed_low_dose{i}.data, 0, 1000);
+        close all;
+        lowKet_psd(:,:, counter) = power(:,2:51);
+    
+        [power, ~] = spectopo(Penn_processed_high_dose{i}.data, 0, 1000);
+        close all;
+        highKet_psd(:,:, counter) = power(:,2:51);
+    end
+end
+
+% average them by dose
+avg_awake_psd = mean(awake_psd, 3);
+avg_lowKet_psd = mean(lowKet_psd, 3);
+avg_highKet_psd = mean(highKet_psd, 3);
+
+figure;
+subplot(3, 1, 1)
+imagesc((avg_awake_psd)); ylabel('Channels', 'FontSize', 12); title("0.0µg/mL Ketamine", 'FontSize', 12); hcb=colorbar; hcb.Title.String = "Power (dB)"; xlim([1, 50]);
+caxis([-21 11])
+subplot(3, 1, 2)
+imagesc((avg_lowKet_psd)); ylabel('Channels', 'FontSize', 12); title("0.2µg/mL Ketamine", 'FontSize', 12); hcb=colorbar; hcb.Title.String = "Power (dB)"; xlim([1, 50]);
+caxis([-21 11])
+subplot(3, 1, 3)
+imagesc((avg_highKet_psd)); xlabel('Frequency (Hz)', 'FontSize', 12); ylabel('Channels', 'FontSize', 12); title("0.4µg/mL Ketamine", 'FontSize', 10); hcb=colorbar; hcb.Title.String = "Power (dB)"; xlim([1, 50]);
+caxis([-21 11])
+%sgtitle("Averaged Power by Dose")
+
+%% Averaged Surrogate Data
+
+
+% Generate average 
+
+averaged_lambdas_surrogate = {[]};
+
+for i = 1:length(Penn_awake_stability_output_surrogate)
+    if (i == 1)
+        averaged_lambdas_surrogate{1} = Penn_awake_stability_output_surrogate{i}.lambda_histograms;
+        averaged_lambdas_surrogate{2} = Penn_lowDose_stability_output_surrogate{i}.lambda_histograms;
+        averaged_lambdas_surrogate{3} = Penn_highDose_stability_output_surrogate{i}.lambda_histograms;
+    else
+        averaged_lambdas_surrogate{1} = averaged_lambdas_surrogate{1} + Penn_awake_stability_output_surrogate{i}.lambda_histograms;
+        averaged_lambdas_surrogate{2} = averaged_lambdas_surrogate{2} + Penn_lowDose_stability_output_surrogate{i}.lambda_histograms;
+        averaged_lambdas_surrogate{3} = averaged_lambdas_surrogate{3} + Penn_highDose_stability_output_surrogate{i}.lambda_histograms;
+    end
+end
+averaged_lambdas_surrogate{1} = averaged_lambdas_surrogate{1}/length(Penn_awake_stability_output_surrogate);
+averaged_lambdas_surrogate{2} = averaged_lambdas_surrogate{2}/length(Penn_awake_stability_output_surrogate);
+averaged_lambdas_surrogate{3} = averaged_lambdas_surrogate{3}/length(Penn_awake_stability_output_surrogate);
+
+% Figures
+twn = 0.5; % time window size (s)
+lbn = 0.05:0.005:1.02; % eigenvalue bins
+cdat = Penn_processed_baseline_surrogate{1}.data';
+fs = 1000;
+is = 1:round(twn*fs):size(cdat,1); % window start times (samples)
+tcenter = is(1:end-1)/fs+twn/2; % s
+tcenter = [tcenter, tcenter + 60.0042, tcenter + 120.0042];
+
+fig = figure; 
+imagesc(tcenter,lbn, horzcat(averaged_lambdas_surrogate{1}, averaged_lambdas_surrogate{2}, averaged_lambdas_surrogate{3}))
+set(gca,'YDir','normal');
+colormap(hot(256));
+title('Averaged Histograms by Dose: Time-Shifted Surrogate Data')
+xticks([30, 90, 150]);
+xticklabels({'0µg/mL Ketamine', '0.2µg/mL Ketamine', '0.4µg/mL Ketamine'})
+xlabel('Dose')
+ylabel('Criticality Index')
+colorbar
+a = colorbar;
+a.Label.String = 'Number of Modes';
+xline(60.0042, 'w');
+xline(120.0042, 'w');
+ylim([0.7 1.01])
+
+%% Plot Raw Trace
+
+figure;
+subplot(3,1,1)
+plot(Penn_processed_baseline{1}.data(1, 5000:10000), 'k');
+title("0µg/mL Ketamine")
+xlabel("Time (5s)")
+ylabel("Potential (µV)")
+xlim([0, 5000])
+set(gca,'xtick',[])
+set(gca,'xticklabel',[])
+ylim([-25 25])
+subplot(3,1,2)
+plot(Penn_processed_low_dose{1}.data(1, 5000:10000), 'k');
+title("0.2µg/mL Ketamine")
+xlabel("Time (5s)")
+ylabel("Potential (µV)")
+xlim([0, 5000])
+set(gca,'xtick',[])
+set(gca,'xticklabel',[])
+ylim([-25 25])
+subplot(3,1,3)
+plot(Penn_processed_high_dose{1}.data(1, 5000:10000), 'k');
+title("0.4µg/mL Ketamine")
+xlabel("Time (5s)")
+ylabel("Potential (µV)")
+xlim([0, 5000])
+set(gca,'xtick',[])
+set(gca,'xticklabel',[])
+ylim([-25 25])
+sgtitle("Subject 1, Channel 1")
+
+
+
+
