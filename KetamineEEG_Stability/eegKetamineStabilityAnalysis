@@ -1,0 +1,66 @@
+%% Human Ketamine EEG Stability
+
+%% Load data
+load('Z:\diego\KetamineEEG\Human\PreprocessedData\Penn\Penn_Processed_Data.mat') % Load Penn data
+
+%% Run analysis
+
+win = 0.5; % window size for data
+
+Penn_awake_stability_output = {[]};
+Penn_lowDose_stability_output = {[]};
+Penn_highDose_stability_output = {[]};
+for i = 1:length(Penn_processed_baseline)
+    Penn_awake_stability_output{i} = eegStabilityAnalysis(Penn_processed_baseline{i}.data', 1000, ['PennSubject', num2str(i),'awake'], win);
+    Penn_lowDose_stability_output{i} = eegStabilityAnalysis(Penn_processed_low_dose{i}.data', 1000, ['PennSubject', num2str(i),'lowDose'], win);
+    Penn_highDose_stability_output{i} = eegStabilityAnalysis(Penn_processed_high_dose{i}.data', 1000, ['PennSubject', num2str(i),'highDose'], win);
+end
+
+% Exclude subject with weird artifact 
+Penn_awake_stability_output(3) = [];
+Penn_lowDose_stability_output(3) = [];
+Penn_highDose_stability_output(3) = [];
+%% Hypothesis Testing
+
+Penn_p_values = zeros(length(Penn_awake_stability_output), 3);
+for i = 1:length(Penn_awake_stability_output)
+    [p1, h1, ~] = ranksum(abs(Penn_awake_stability_output{i}.lambdas(:)), abs(Penn_lowDose_stability_output{i}.lambdas(:)));
+    [p2, h2, ~] = ranksum(abs(Penn_lowDose_stability_output{i}.lambdas(:)), abs(Penn_highDose_stability_output{i}.lambdas(:)));
+    [p3, h3, ~] = ranksum(abs(Penn_awake_stability_output{i}.lambdas(:)), abs(Penn_highDose_stability_output{i}.lambdas(:)));
+    Penn_p_values(i, :) = [p1, p2, p3];
+end
+
+writematrix(Penn_p_values, 'Stability_P_Values.csv');
+
+Penn_p_values = array2table(Penn_p_values, 'VariableNames',{'0µg/mL vs 0.2µg/mL','0.2µg/mL vs 0.4µg/mL', '0µg/mL vs 0.4µg/mL'}, 'RowNames', {'Subject 1', 'Subject 2', 'Subject 3', 'Subject 4', 'Subject 5', 'Subject 6'});
+latexTable(Penn_p_values)
+
+%% Plotting
+
+% parameters
+twn = 0.5; % time window size (s)
+lbn = 0.05:0.005:1.02; % eigenvalue bins
+cdat = Penn_processed_baseline{1}.data';
+fs = 1000;
+is = 1:round(twn*fs):size(cdat,1); % window start times (samples)
+tcenter = is(1:end-1)/fs+twn/2; % s
+tcenter = [tcenter, tcenter + 60.0042, tcenter + 120.0042];
+
+for i = 1:length(Penn_awake_stability_output)
+    fig = figure; 
+    imagesc(tcenter,lbn, horzcat(Penn_awake_stability_output{i}.lambda_histograms, Penn_lowDose_stability_output{i}.lambda_histograms, Penn_highDose_stability_output{i}.lambda_histograms))
+    set(gca,'YDir','normal');
+    colormap(hot(256));
+    title(['Subject ', num2str(i)])
+    xticks([30, 90, 150]);
+    xticklabels({'0µg/mL Ketamine', '0.2µg/mL Ketamine', '0.4µg/mL Ketamine'})
+    xlabel('Dose')
+    ylabel('Criticality Index')
+    colorbar
+    a = colorbar;
+    a.Label.String = 'Number of Modes';
+    xline(60.0042, 'w');
+    xline(120.0042, 'w');
+    saveas(fig,['stabilityOutput/figures/Penn_Subject_', num2str(i), '_figure.png']);
+    close all;
+end
