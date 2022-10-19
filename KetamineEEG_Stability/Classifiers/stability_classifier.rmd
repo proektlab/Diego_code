@@ -1,0 +1,165 @@
+---
+title: "Stability EEG Ketamine Dose Classifier"
+output: html_notebook
+author: Diego G. Davila, PhD Candidate, Proekt Lab, University of Pennsylvania School of Medicine
+---
+
+This notebook covers the development of a classifier trained to pick out a subject's ketamine blood concentration based on linear stability measures derived from scalp EEG. 
+
+# Setup
+```{r}
+library(pacman)
+p_load(dplyr, tidyverse, glmnet, randomForest, tree, ggplot2, skimr, ggRandomForests, xgboost, kableExtra, keras, neuralnet, tensorflow, ggpubr, effectsize, pROC, verification, MASS, pracma, ROCR, e1071)
+```
+
+# Smoothed Criticality Index Histogram Model
+
+## Load data
+```{r}
+data2 <- read.csv('EEG_CSV/classification_lambda_histograms.csv', header = FALSE)
+data2[,195] <- as.factor(data2[,195]) # Turn the response variable into a factor
+data2[,196] <- as.factor(data2[,196]) # subject id
+colnames(data2)[196] <- c("subject.id")
+
+#skimr::skim(data2)
+```
+
+
+## Create and train the classifier
+```{r}
+rf_classifier_2 <- randomForest(data = data2,        # Pass in the data
+                              x = data2[,151:194],   # Select the predictor variables (0.8-1.2 Crit. Index)
+                              y = data2[,195],       # Select the response variable
+                              ntree = 500,           # Select the range of number of trees to try
+                              mtry = 6)             # Select the number of variables for each tree to use
+```
+
+## Plotting
+```{r}
+oob.err_2 <- gg_error(rf_classifier_2)
+colnames(oob.err_2) <- c('All','0.0μg/ml', '0.4μg/ml', 'ntree')
+
+plot(oob.err_2) + 
+  ggtitle("Stability-Based RandomForest Classifier: Ketamine Dose") 
+
+
+# Plot the feature importance
+jpeg(file="C:/Users/diego/Desktop/EEGStabilityGroupFigures/Classifier_FeatureImportance.jpeg", width = 300, height = 200, units='mm', res = 300)
+rf_2_feature_importance <- data.frame(importance(rf_classifier_2), Criticality_Bin = seq(0.8, 1.015, by = 0.005))
+ggplot(data = rf_2_feature_importance, aes(x=Criticality_Bin, y=MeanDecreaseGini)) + 
+  geom_bar(stat="identity", fill="darkcyan") +
+  ggtitle("Stability Classifier Feature Importance") + 
+  theme(plot.title = element_text(face="bold", size=15), axis.title = element_text(face="bold", size=15), axis.text = element_text(face="bold", size=15)) 
+dev.off()
+```
+
+## Surrogate Data Testing
+
+### Load Data
+```{r}
+surrogate <- read.csv('EEG_CSV/surrogate_classification_lambda_histograms.csv', header = FALSE)
+surrogate[,195] <- as.factor(surrogate[,195]) # Turn the response variable into a factor
+surrogate[,196] <- as.factor(surrogate[,196]) # subject id
+colnames(surrogate)[196] <- c("subject.id")
+#skimr::skim(surrogate)
+```
+
+### Create and train the classifier
+```{r}
+rf_classifier_4 <- randomForest(data = surrogate,        # Pass in the data
+                              x = surrogate[,151:194],   # Select the predictor variables (0.8-1.2 Crit. Index)
+                              y = surrogate[,195],       # Select the response variable
+                              ntree = 500,           # Select the range of number of trees to try
+                              mtry = 6)             # Select the number of variables for each tree to use 
+```
+
+### Plotting
+```{r}
+oob.err_4 <- gg_error(rf_classifier_4)
+colnames(oob.err_4) <- c('All','0.0μg/ml', '0.4μg/ml', 'ntree')
+
+plot(oob.err_4) + 
+  ggtitle("Stability-Based RandomForest Classifier: Ketamine Dose (Surrogate)") 
+
+rf_4_feature_importance <- data.frame(importance(rf_classifier_4), Criticality_Bin = seq(0.8, 1.015, by = 0.005))
+
+ggplot(data = rf_4_feature_importance, aes(x=Criticality_Bin, y=MeanDecreaseGini)) + 
+  geom_bar(stat="identity", fill="darkcyan") +
+  ggtitle("Classifier Feature Importance: Surrogate Data")
+  
+```
+
+
+# Leave-one-out testing for each subject
+
+## Original Data
+```{r}
+# store prediction errors here
+prediction.error <- rep(0,6)
+
+for (i in 1:6){
+  train.x <- data2[(as.numeric(data2$subject.id) != i),]
+  test.x <- data2[(as.numeric(data2$subject.id) == i),]
+  
+  # train the model
+  rf_classifier_x <- randomForest(data = train.x,        # Pass in the data
+                              x = train.x[,151:194],   # Select the predictor variables (0.8-1.2 Crit. Index)
+                              y = train.x[,195],       # Select the response variable
+                              ntree = 500,           # Select the range of number of trees to try
+                              mtry = 6)             # Select the number of variables for each tree to use 
+  
+  pred.x <- predict(object = rf_classifier_x, newdata = test.x[,151:194]) # Get prediction for left-out subject
+  prediction.error[i] <- sum(pred.x != test.x[,195])/dim(test.x)[1] # calculate the error rate
+} 
+prediction.error
+```
+
+```{r}
+# Plot Leave-One-Out Error By Subject
+pe <- data.frame(prediction.error)
+pe$Left_Out_Subject <- c("Subject 1", "Subject 2", "Subject 3", "Subject 4", "Subject 5", "Subject 6")
+colnames(pe)[1] <- c("Prediction_Error")
+jpeg(file="C:/Users/diego/Desktop/EEGStabilityGroupFigures/Stability_LeaveOneOut_PredictionError.jpeg", width = 300, height = 200, units='mm', res = 300)
+ggplot(data = pe, aes(y=Prediction_Error, x=Left_Out_Subject))+
+  geom_col(fill='aquamarine4') + 
+  ylim(c(0, 1)) +
+  ggtitle("Stability Classifier 'Leave-One-Out' Prediction Error") +
+  xlab("Left-out Subject") +
+  ylab("Prediction Error") + 
+  geom_text(aes(label=sprintf("%0.3f", round(Prediction_Error, digits = 3))), position=position_dodge(width=0.9), vjust=-0.25) +
+  theme(plot.title = element_text(face="bold", size=15), axis.title = element_text(face="bold", size=15), axis.text = element_text(face="bold", size=15))
+dev.off
+```
+
+
+## Surrogate Data
+```{r}
+# store prediction errors here
+prediction.error.surr <- rep(0,6)
+
+for (i in 1:6){
+  train.x <- surrogate[(as.numeric(surrogate$subject.id) != i),]
+  test.x <- surrogate[(as.numeric(surrogate$subject.id) == i),]
+  
+  # train the model
+  rf_classifier_x <- randomForest(data = train.x,        # Pass in the data
+                              x = train.x[,151:194],   # Select the predictor variables (0.8-1.2 Crit. Index)
+                              y = train.x[,195],       # Select the response variable
+                              ntree = 500,           # Select the range of number of trees to try
+                              mtry = 6)             # Select the number of variables for each tree to use 
+  
+  pred.x.surr <- predict(object = rf_classifier_x, newdata = test.x[,151:194]) # Get prediction for left-out subject
+  prediction.error.surr[i] <- sum(pred.x.surr != test.x[,195])/dim(test.x)[1] # calculate the error rate
+} 
+prediction.error.surr
+```
+
+## Prediction Error Table
+```{r}
+
+all.errors <- data.frame(Real = prediction.error, Surrogate = prediction.error.surr)
+rownames(all.errors) <- c("Subject 1", "Subject 2", "Subject 3", "Subject 4", "Subject 5", "Subject 6")
+kable(all.errors, align='cc', format = 'html')
+
+```
+
