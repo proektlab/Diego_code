@@ -1,0 +1,586 @@
+%% EEG Preprocessing
+% This Script applies standardized preprocessing for EEG data collected at
+% Penn. 
+
+% Add reguired paths
+addpath 'C:\Users\diego\Documents\MATLAB\eeglab2020_0';
+eeglab % initialize eeglab
+close all; % close eeglab window
+addpath 'Z:\code\SpectralAnalysis';
+
+%% Read in Raw Data
+
+% set up some useful lists
+sl = [5 5 5 5 6 6 6 6 8 8 8 8 9 9 9 9 11 11 11 11 12 12 12 12 13 13 13 13]; % indexwise subject assignment
+st = [1 2 3  4 1 2 3 4 1 2 3 4 1 2 3 4 1 2 3 4 1 2 3 4 1 2 3 4]; % indexwise dose assignment
+subject_list = [5 6 8 9 11 12 13]; % list of all subjects
+
+% read in the data
+Penn_raw = {[]};
+for i = 1:28
+    Penn_raw{i} = pop_loadset(['sub' num2str(sl(i)) '_step' num2str(st(i)) '.set'], 'Z:\diego\KetamineEEG\Human\PennRawData');
+end
+
+% separate out the datasets by dosage
+Penn_raw_baseline = Penn_raw(1:4:28); % no ketamine
+Penn_raw_low_dose = Penn_raw(2:4:28); % low subanesthetic dose
+Penn_raw_high_dose = Penn_raw(3:4:28); % high subanesthetic dose
+Penn_raw_anes_dose = Penn_raw(4:4:28); % full anesthetic dose
+
+%% Re-label a subset of channels in 10-20 format. This will be needed for automated artifact rejection.
+
+% BASELINE
+for s = 1:length(Penn_raw_baseline) % for every subject
+    for c = 1:size(Penn_raw_baseline{s}.data, 1) % for every channel
+        % check the current label, if it matches any of the required
+        % channels, swap the label.
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E22'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'FP1';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E9'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'FP2';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E33'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'F7';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E24'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'F3';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E124'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'F4';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E122'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'F8';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E36'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'C3';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E104'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'C4';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E58'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'T5';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E62'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'Pz';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E96'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'T6';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E70'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'O1';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E83'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'O2';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E45'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'T3';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E108'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'T4';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E87'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'P3';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E92'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'P4';
+        end
+        if (strcmp(Penn_raw_baseline{s}.chanlocs(c).labels, 'E11'))
+            Penn_raw_baseline{s}.chanlocs(c).labels = 'Fz';
+        end
+    end
+end
+
+% LOW DOSE
+for s = 1:length(Penn_raw_low_dose) % for every subject
+    for c = 1:size(Penn_raw_low_dose{s}.data, 1) % for every channel
+        % check the current label, if it matches any of the required
+        % channels, swap the label.
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E22'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'FP1';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E9'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'FP2';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E33'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'F7';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E24'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'F3';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E124'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'F4';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E122'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'F8';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E36'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'C3';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E104'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'C4';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E58'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'T5';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E62'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'Pz';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E96'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'T6';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E70'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'O1';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E83'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'O2';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E45'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'T3';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E108'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'T4';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E87'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'P3';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E92'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'P4';
+        end
+        if (strcmp(Penn_raw_low_dose{s}.chanlocs(c).labels, 'E11'))
+            Penn_raw_low_dose{s}.chanlocs(c).labels = 'Fz';
+        end
+    end
+end
+
+% HIGH DOSE
+for s = 1:length(Penn_raw_high_dose) % for every subject
+    for c = 1:size(Penn_raw_high_dose{s}.data, 1) % for every channel
+        % check the current label, if it matches any of the required
+        % channels, swap the label.
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E22'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'FP1';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E9'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'FP2';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E33'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'F7';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E24'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'F3';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E124'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'F4';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E122'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'F8';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E36'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'C3';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E104'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'C4';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E58'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'T5';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E62'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'Pz';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E96'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'T6';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E70'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'O1';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E83'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'O2';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E45'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'T3';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E108'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'T4';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E87'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'P3';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E92'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'P4';
+        end
+        if (strcmp(Penn_raw_high_dose{s}.chanlocs(c).labels, 'E11'))
+            Penn_raw_high_dose{s}.chanlocs(c).labels = 'Fz';
+        end
+    end
+end
+
+% ANES DOSE
+for s = 1:length(Penn_raw_anes_dose) % for every subject
+    for c = 1:size(Penn_raw_anes_dose{s}.data, 1) % for every channel
+        % check the current label, if it matches any of the required
+        % channels, swap the label.
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E22'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'FP1';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E9'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'FP2';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E33'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'F7';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E24'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'F3';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E124'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'F4';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E122'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'F8';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E36'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'C3';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E104'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'C4';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E58'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'T5';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E62'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'Pz';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E96'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'T6';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E70'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'O1';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E83'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'O2';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E45'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'T3';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E108'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'T4';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E87'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'P3';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E92'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'P4';
+        end
+        if (strcmp(Penn_raw_anes_dose{s}.chanlocs(c).labels, 'E11'))
+            Penn_raw_anes_dose{s}.chanlocs(c).labels = 'Fz';
+        end
+    end
+end
+
+%% Remove non-scalp channels
+
+% Scalp Channels 
+scalp_chans = [15,22,9,26,23,18,16,10,3,2,33,27,24,19,11,4,124,123,34,28,20,12,5,118,117,116,40,35,29,13,6,112,111,110,109,41,36,30,7,106,105,104,103,46,47,42,37,31,80,87,93,98,102,51,52,53,54,55,79,86,92,97,58,59,60,61,78,85,91,65,66,67,62,77,84,90,70,71,72,76,83,75];
+
+% Remove non-scalp channels from Penn data
+for i = 1:length(Penn_raw_baseline)
+    data = pop_select(Penn_raw_baseline{i}, 'channel', scalp_chans); % remove the non-scalp channels from baseline dataset
+    Penn_raw_baseline{i} = data; % overwrite
+    
+    data = pop_select(Penn_raw_low_dose{i}, 'channel', scalp_chans); % remove the non-scalp channels from low dose dataset
+    Penn_raw_low_dose{i} = data; % overwrite
+    
+    data = pop_select(Penn_raw_high_dose{i}, 'channel', scalp_chans); % remove the non-scalp channels from high dose dataset
+    Penn_raw_high_dose{i} = data; % overwrite
+
+    data = pop_select(Penn_raw_anes_dose{i}, 'channel', scalp_chans); % remove the non-scalp channels from high dose dataset
+    Penn_raw_anes_dose{i} = data; % overwrite
+end
+
+
+%% Select segments of time to use
+% Extract 1 min of clean data. To get the corresponding indexes, we'll set the time intervals in seconds and
+% multiply by the sampling rate as such: [start, stop] * sampling_rate
+
+s_rate = 1000; % sampling rate in Hz
+
+Penn_baseline_times = {[15, 75] * s_rate,
+    [15, 75] * s_rate,
+    [15, 75] * s_rate,
+    [30, 90] * s_rate,
+    [15, 75] * s_rate,
+    [15, 75] * s_rate,
+    [15, 75] * s_rate};
+
+Penn_low_dose_times = {[15, 75] * s_rate,
+    [15, 75] * s_rate,
+    [30, 90] * s_rate,
+    [15, 75] * s_rate,
+    [60, 120] * s_rate,
+    [30, 90] * s_rate,
+    [15, 75] * s_rate};
+
+Penn_high_dose_times = {[30, 90] * s_rate,
+    [60, 120] * s_rate,
+    [30, 90] * s_rate,
+    [30, 90] * s_rate,
+    [10, 70] * s_rate,
+    [15, 75] * s_rate,
+    [15, 75] * s_rate};
+
+Penn_anes_dose_times = {[30, 90] * s_rate,
+    [60, 120] * s_rate,
+    [30, 90] * s_rate,
+    [30, 90] * s_rate,
+    [10, 70] * s_rate,
+    [15, 75] * s_rate,
+    [15, 75] * s_rate};
+
+
+%% Extract segments of time defined in previous step
+
+% Penn Baseline
+Penn_processed_baseline = Penn_raw_baseline; % prepare a copy
+for i = 1:length(Penn_processed_baseline)
+    bound1 = [0 Penn_baseline_times{i}(1)]; % lower time bound condition
+    bound2 = [Penn_baseline_times{i}(2)+1 length(Penn_processed_baseline{i}.data(1,:))]; % upper time bound condition
+    Penn_processed_baseline{i} = eeg_eegrej(Penn_processed_baseline{i}, bound2); % cut the top off first
+    Penn_processed_baseline{i} = eeg_eegrej(Penn_processed_baseline{i}, bound1); % then, cut the bottom (this order prevents indexing errors)
+end
+
+% Penn Low Dose
+Penn_processed_low_dose = Penn_raw_low_dose; % prepare a copy
+for i = 1:length(Penn_processed_low_dose)
+    bound1 = [0 Penn_low_dose_times{i}(1)]; % lower time bound condition
+    bound2 = [Penn_low_dose_times{i}(2)+1 length(Penn_processed_low_dose{i}.data(1,:))]; % upper time bound condition
+    Penn_processed_low_dose{i} = eeg_eegrej(Penn_processed_low_dose{i}, bound2); % cut the top off first
+    Penn_processed_low_dose{i} = eeg_eegrej(Penn_processed_low_dose{i}, bound1); % then, cut the bottom (this order prevents indexing errors)
+end
+
+% Penn High Dose
+Penn_processed_high_dose = Penn_raw_high_dose; % prepare a copy
+for i = 1:length(Penn_processed_high_dose)
+    bound1 = [0 Penn_high_dose_times{i}(1)]; % lower time bound condition
+    bound2 = [Penn_high_dose_times{i}(2)+1 length(Penn_processed_high_dose{i}.data(1,:))]; % upper time bound condition
+    Penn_processed_high_dose{i} = eeg_eegrej(Penn_processed_high_dose{i}, bound2); % cut the top off first
+    Penn_processed_high_dose{i} = eeg_eegrej(Penn_processed_high_dose{i}, bound1); % then, cut the bottom (this order prevents indexing errors)
+end
+
+% Penn Anes Dose 
+Penn_processed_anes_dose = Penn_raw_anes_dose; % prepare a copy
+for i = 1:length(Penn_processed_anes_dose)
+    bound1 = [0 Penn_anes_dose_times{i}(1)]; % lower time bound condition
+    bound2 = [Penn_anes_dose_times{i}(2)+1 length(Penn_processed_anes_dose{i}.data(1,:))]; % upper time bound condition
+    Penn_processed_anes_dose{i} = eeg_eegrej(Penn_processed_anes_dose{i}, bound2); % cut the top off first
+    Penn_processed_anes_dose{i} = eeg_eegrej(Penn_processed_anes_dose{i}, bound1); % then, cut the bottom (this order prevents indexing errors)
+end
+
+%% Zero-Phase Butterworth filter
+% filter creation
+fc = [0.5, 200];
+fs = 1000;
+order = 4;
+[b,a] = butter(order,fc/(fs/2));
+
+% Penn Data
+for i = 1:length(Penn_raw_baseline)
+    % baseline dose 
+    Penn_processed_baseline{i}.data = filtfilt(b, a, double(Penn_processed_baseline{i}.data)')';
+    
+    % low dose
+    Penn_processed_low_dose{i}.data = filtfilt(b, a, double(Penn_processed_low_dose{i}.data)')';
+    
+    % high dose
+    Penn_processed_high_dose{i}.data = filtfilt(b, a, double(Penn_processed_high_dose{i}.data)')';
+
+    % anes dose
+    Penn_processed_anes_dose{i}.data = filtfilt(b, a, double(Penn_processed_anes_dose{i}.data)')';
+end
+
+
+%% Remove and interpolate bad channels
+% remove channels that are std_thresh standard deviations from the mean
+
+std_thresh = 2; % define threshold for rejection (i.e. reject channels this many standard deviations from the mean)
+
+% Penn Baseline data
+for i = 1:length(Penn_processed_baseline)
+    data = Penn_processed_baseline{i}; % get the dataset
+    [temp_set, bad_ind] = pop_rejchanspec(data, 'stdthresh', std_thresh); % get indexes of channels 2 standard deviations away from mean
+    if isempty(bad_ind) == false % only interpolate if any bad channels were identified
+        new_set = eeg_interp(data, bad_ind, 'spherical'); % spherical spline interpolation, using indexes derived just above
+        Penn_processed_baseline{i} = new_set; % overwrite
+    end
+end
+
+% Penn Low Dose data
+for i = 1:length(Penn_processed_low_dose)
+    data = Penn_processed_low_dose{i}; % get the dataset
+    [temp_set, bad_ind] = pop_rejchanspec(data, 'stdthresh', std_thresh); % get indexes of channels 2 standard deviations away from mean
+    if isempty(bad_ind) == false % only interpolate if any bad channels were identified
+        new_set = eeg_interp(data, bad_ind, 'spherical'); % spherical spline interpolation, using indexes derived just above
+        Penn_processed_low_dose{i} = new_set; % overwrite
+    end
+end
+
+% Penn High Dose data
+for i = 1:length(Penn_processed_high_dose)
+    data = Penn_processed_high_dose{i}; % get the dataset
+    [temp_set, bad_ind] = pop_rejchanspec(data, 'stdthresh', std_thresh); % get indexes of channels 2 standard deviations away from mean
+    if isempty(bad_ind) == false % only interpolate if any bad channels were identified
+        new_set = eeg_interp(data, bad_ind, 'spherical'); % spherical spline interpolation, using indexes derived just above
+        Penn_processed_high_dose{i} = new_set; % overwrite
+    end
+end
+
+% Penn Anes Dose data
+for i = 1:length(Penn_processed_anes_dose)
+    data = Penn_processed_anes_dose{i}; % get the dataset
+    [temp_set, bad_ind] = pop_rejchanspec(data, 'stdthresh', std_thresh); % get indexes of channels 2 standard deviations away from mean
+    if isempty(bad_ind) == false % only interpolate if any bad channels were identified
+        new_set = eeg_interp(data, bad_ind, 'spherical'); % spherical spline interpolation, using indexes derived just above
+        Penn_processed_anes_dose{i} = new_set; % overwrite
+    end
+end
+
+
+%% Run ICA 
+% Run ICA on all of the sessions individually so we can use components to
+% remove line noise and reject artifacts
+
+% Penn Baseline data
+for i = 1:length(Penn_processed_baseline)
+    Penn_processed_baseline{i} = pop_runica(Penn_processed_baseline{i}, 'icatype', 'runica');
+end
+
+% Penn Low Dose data
+for i = 1:length(Penn_processed_low_dose)
+    Penn_processed_low_dose{i} = pop_runica(Penn_processed_low_dose{i}, 'icatype', 'runica');
+end
+
+% Penn High Dose data
+for i = 1:length(Penn_processed_high_dose)
+    Penn_processed_high_dose{i} = pop_runica(Penn_processed_high_dose{i}, 'icatype', 'runica');
+end
+
+% Penn Anes Dose data
+for i = 1:length(Penn_processed_anes_dose)
+    Penn_processed_anes_dose{i} = pop_runica(Penn_processed_anes_dose{i}, 'icatype', 'runica');
+end
+
+% CALCULATE ICA ACTIVATIONS 
+
+% Penn Baseline data
+for i = 1:length(Penn_processed_baseline)
+    proc_dat = Penn_processed_baseline{i}; % for convenience, make a copy
+    Penn_processed_baseline{i}.icaact = icaact(proc_dat.data, proc_dat.icaweights*proc_dat.icasphere, mean(proc_dat.data'));
+end
+
+% Penn Low Dose data
+for i = 1:length(Penn_processed_low_dose)
+    proc_dat = Penn_processed_low_dose{i}; % for convenience, make a copy
+    Penn_processed_low_dose{i}.icaact = icaact(proc_dat.data, proc_dat.icaweights*proc_dat.icasphere, mean(proc_dat.data'));
+end
+
+% Penn High Dose data
+for i = 1:length(Penn_processed_high_dose)
+    proc_dat = Penn_processed_high_dose{i}; % for convenience, make a copy
+    Penn_processed_high_dose{i}.icaact = icaact(proc_dat.data, proc_dat.icaweights*proc_dat.icasphere, mean(proc_dat.data'));
+end
+
+% Penn Anes Dose data
+for i = 1:length(Penn_processed_anes_dose)
+    proc_dat = Penn_processed_anes_dose{i}; % for convenience, make a copy
+    Penn_processed_anes_dose{i}.icaact = icaact(proc_dat.data, proc_dat.icaweights*proc_dat.icasphere, mean(proc_dat.data'));
+end
+
+%% Remove Line Noise
+% Use cleanline pluggin for EEGLAB to remove line noise around 60 Hz and
+% 120 Hz and 180 Hz harmonics. 
+
+bd_thresh = 2; % Set the bandwidth for noise removal in Hz
+noise_freq = [60 120 180]; % set frequencies to center around
+
+% Penn Baseline data
+for i = 1:length(Penn_processed_baseline)
+    Penn_processed_baseline{i} = pop_cleanline(Penn_processed_baseline{i}, 'LineFrequencies', noise_freq, 'Bandwidth', bd_thresh, 'ComputeSpectralPower', 'false', 'VerboseOutput', 'false');
+end
+
+% Penn Low Dose data
+for i = 1:length(Penn_processed_low_dose)
+    Penn_processed_low_dose{i} = pop_cleanline(Penn_processed_low_dose{i}, 'LineFrequencies', noise_freq, 'Bandwidth', bd_thresh, 'ComputeSpectralPower', 'false', 'VerboseOutput', 'false');
+end
+
+% Penn High Dose data
+for i = 1:length(Penn_processed_high_dose)
+    Penn_processed_high_dose{i} = pop_cleanline(Penn_processed_high_dose{i}, 'LineFrequencies', noise_freq, 'Bandwidth', bd_thresh, 'ComputeSpectralPower', 'false', 'VerboseOutput', 'false');
+end
+
+% Penn Anes Dose data
+for i = 1:length(Penn_processed_anes_dose)
+    Penn_processed_anes_dose{i} = pop_cleanline(Penn_processed_anes_dose{i}, 'LineFrequencies', noise_freq, 'Bandwidth', bd_thresh, 'ComputeSpectralPower', 'false', 'VerboseOutput', 'false');
+end
+
+
+%% Automated Component Labeling via ICLabel & Rejection of Non-Brain (Artifact) Components
+
+% Penn Baseline Data
+for i = 1:length(Penn_processed_baseline)
+    Penn_processed_baseline{i} = clean_comp(Penn_processed_baseline{i});
+end
+
+% Penn Low Dose Data
+for i = 1:length(Penn_processed_low_dose)
+    Penn_processed_low_dose{i} = clean_comp(Penn_processed_low_dose{i});
+end
+
+% Penn High Dose Data
+for i = 1:length(Penn_processed_high_dose)
+    Penn_processed_high_dose{i} = clean_comp(Penn_processed_high_dose{i});
+end
+
+% Penn Anes Dose Data
+for i = 1:length(Penn_processed_anes_dose)
+    Penn_processed_anes_dose{i} = clean_comp(Penn_processed_anes_dose{i});
+end
+
+
+%% Perform Average Re-Referencing
+
+% Penn Baseline data
+for i = 1:length(Penn_processed_baseline)
+    data = pop_reref(Penn_processed_baseline{i},[]); % re-reference to average
+    Penn_processed_baseline{i} = data; % overwrite
+end
+
+% Penn Low Dose data
+for i = 1:length(Penn_processed_low_dose)
+    data = pop_reref(Penn_processed_low_dose{i},[]); % re-reference to average
+    Penn_processed_low_dose{i} = data; % overwrite
+end
+
+% Penn High Dose data
+for i = 1:length(Penn_processed_high_dose)
+    data = pop_reref(Penn_processed_high_dose{i},[]); % re-reference to average
+    Penn_processed_high_dose{i} = data; % overwrite
+end
+
+% Penn Anes Dose data
+for i = 1:length(Penn_processed_anes_dose)
+    data = pop_reref(Penn_processed_anes_dose{i},[]); % re-reference to average
+    Penn_processed_anes_dose{i} = data; % overwrite
+end
+
+%% Save prepared data
+for i = 1:length(Penn_processed_baseline)
+    %pop_saveset(Penn_processed_baseline{i}, ['Penn_sub-' num2str(i) '_baseline_rest_eeg_preprocessed.set'],  'Z:\diego\KetamineEEG\Human\PreprocessedData\Penn');
+    %pop_saveset(Penn_processed_low_dose{i}, ['Penn_sub-' num2str(i) '_low_ketamine_rest_eeg_preprocessed.set'],  'Z:\diego\KetamineEEG\Human\PreprocessedData\Penn');
+    %pop_saveset(Penn_processed_high_dose{i}, ['Penn_sub-' num2str(i) '_high_ketamine_rest_eeg_preprocessed.set'],  'Z:\diego\KetamineEEG\Human\PreprocessedData\Penn');
+    pop_saveset(Penn_processed_anes_dose{i}, ['Penn_sub-' num2str(i) '_anes_ketamine_rest_eeg_preprocessed.set'],  'Z:\diego\KetamineEEG\Human\PreprocessedData\Penn');
+end
+%save('Z:\diego\KetamineEEG\Human\PreprocessedData\Penn\Penn_Processed_Data.mat', 'Penn_processed_baseline', 'Penn_processed_low_dose', 'Penn_processed_high_dose', 'Penn_processed_anes_dose', '-v7.3');
+save('Z:\diego\KetamineEEG\Human\PreprocessedData\Penn\Penn_Processed_Anes_Data.mat', 'Penn_processed_anes_dose', '-v7.3');
+
+
+
+
